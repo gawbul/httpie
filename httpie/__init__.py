@@ -2,8 +2,8 @@
 HTTPie - a CLI, cURL-like tool for humans.
 
 """
-__author__ = 'Jakub Roztocil'
 __version__ = '1.0.0-dev'
+__author__ = 'Jakub Roztocil'
 __licence__ = 'BSD'
 
 
@@ -11,6 +11,11 @@ class ExitStatus:
     """Exit status code constants."""
     OK = 0
     ERROR = 1
+    PLUGIN_ERROR = 7
+
+    # 128+2 SIGINT <http://www.tldp.org/LDP/abs/html/exitcodes.html>
+    ERROR_CTRL_C = 130
+
     ERROR_TIMEOUT = 2
     ERROR_TOO_MANY_REDIRECTS = 6
 

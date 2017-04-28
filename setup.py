@@ -35,9 +35,10 @@ tests_require = [
 
 
 install_requires = [
-    'requests>=2.3.0',
-    'Pygments>=1.5'
+    'requests>=2.11.0',
+    'Pygments>=2.1.3'
 ]
+
 
 # Conditional dependencies:
 
@@ -68,13 +69,14 @@ def long_description():
     with codecs.open('README.rst', encoding='utf8') as f:
         return f.read()
 
+
 setup(
     name='httpie',
     version=httpie.__version__,
     description=httpie.__doc__.strip(),
     long_description=long_description(),
     url='http://httpie.org/',
-    download_url='https://github.com/jkbrzt/httpie',
+    download_url='https://github.com/jakubroztocil/httpie',
     author=httpie.__author__,
     author_email='jakub@roztocil.co',
     license=httpie.__licence__,
@@ -99,6 +101,8 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',

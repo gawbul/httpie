@@ -1,6 +1,5 @@
 import json
 import sys
-from pprint import pformat
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -24,8 +23,9 @@ except AttributeError:
     pass
 
 
-FORM = 'application/x-www-form-urlencoded; charset=utf-8'
-JSON = 'application/json'
+FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded; charset=utf-8'
+JSON_CONTENT_TYPE = 'application/json'
+JSON_ACCEPT = '{0}, */*'.format(JSON_CONTENT_TYPE)
 DEFAULT_UA = 'HTTPie/%s' % __version__
 
 
@@ -85,13 +85,23 @@ def dump_request(kwargs):
                      % repr_dict_nice(kwargs))
 
 
-def encode_headers(headers):
-    # This allows for unicode headers which is non-standard but practical.
-    # See: https://github.com/jkbrzt/httpie/issues/212
-    return dict(
-        (name, value.encode('utf8') if isinstance(value, str) else value)
-        for name, value in headers.items()
-    )
+def finalize_headers(headers):
+    final_headers = {}
+    for name, value in headers.items():
+        if value is not None:
+
+            # >leading or trailing LWS MAY be removed without
+            # >changing the semantics of the field value"
+            # -https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html
+            # Also, requests raises `InvalidHeader` for leading spaces.
+            value = value.strip()
+
+            if isinstance(value, str):
+                # See: https://github.com/jakubroztocil/httpie/issues/212
+                value = value.encode('utf8')
+
+        final_headers[name] = value
+    return final_headers
 
 
 def get_default_headers(args):
@@ -100,16 +110,15 @@ def get_default_headers(args):
     }
 
     auto_json = args.data and not args.form
-    # FIXME: Accept is set to JSON with `http url @./file.txt`.
     if args.json or auto_json:
-        default_headers['Accept'] = 'application/json'
+        default_headers['Accept'] = JSON_ACCEPT
         if args.json or (auto_json and args.data):
-            default_headers['Content-Type'] = JSON
+            default_headers['Content-Type'] = JSON_CONTENT_TYPE
 
     elif args.form and not args.files:
         # If sending files, `requests` will set
         # the `Content-Type` for us.
-        default_headers['Content-Type'] = FORM
+        default_headers['Content-Type'] = FORM_CONTENT_TYPE
     return default_headers
 
 
@@ -134,12 +143,7 @@ def get_requests_kwargs(args, base_headers=None):
     if base_headers:
         headers.update(base_headers)
     headers.update(args.headers)
-    headers = encode_headers(headers)
-
-    credentials = None
-    if args.auth:
-        auth_plugin = plugin_manager.get_auth_plugin(args.auth_type)()
-        credentials = auth_plugin.get_auth(args.auth.key, args.auth.value)
+    headers = finalize_headers(headers)
 
     cert = None
     if args.cert:
@@ -155,11 +159,13 @@ def get_requests_kwargs(args, base_headers=None):
         'data': data,
         'verify': {
             'yes': True,
-            'no': False
-        }.get(args.verify, args.verify),
+            'true': True,
+            'no': False,
+            'false': False,
+        }.get(args.verify.lower(), args.verify),
         'cert': cert,
         'timeout': args.timeout,
-        'auth': credentials,
+        'auth': args.auth,
         'proxies': dict((p.key, p.value) for p in args.proxy),
         'files': args.files,
         'allow_redirects': args.follow,

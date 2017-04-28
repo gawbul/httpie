@@ -2,6 +2,7 @@
 Tests for the provided defaults regarding HTTP method, and --json vs. --form.
 
 """
+from httpie.client import JSON_ACCEPT
 from utils import TestEnvironment, http, HTTP_OK
 from fixtures import FILE_PATH
 
@@ -42,7 +43,7 @@ class TestAutoContentTypeAndAcceptHeaders:
     """
 
     def test_GET_no_data_no_auto_headers(self, httpbin):
-        # https://github.com/jkbrzt/httpie/issues/62
+        # https://github.com/jakubroztocil/httpie/issues/62
         r = http('GET', httpbin.url + '/headers')
         assert HTTP_OK in r
         assert r.json['headers']['Accept'] == '*/*'
@@ -58,22 +59,22 @@ class TestAutoContentTypeAndAcceptHeaders:
     def test_POST_with_data_auto_JSON_headers(self, httpbin):
         r = http('POST', httpbin.url + '/post', 'a=b')
         assert HTTP_OK in r
-        assert '"Accept": "application/json"' in r
-        assert '"Content-Type": "application/json' in r
+        assert r.json['headers']['Accept'] == JSON_ACCEPT
+        assert r.json['headers']['Content-Type'] == 'application/json'
 
     def test_GET_with_data_auto_JSON_headers(self, httpbin):
         # JSON headers should automatically be set also for GET with data.
         r = http('POST', httpbin.url + '/post', 'a=b')
         assert HTTP_OK in r
-        assert '"Accept": "application/json"' in r, r
-        assert '"Content-Type": "application/json' in r
+        assert r.json['headers']['Accept'] == JSON_ACCEPT
+        assert r.json['headers']['Content-Type'] == 'application/json'
 
     def test_POST_explicit_JSON_auto_JSON_accept(self, httpbin):
         r = http('--json', 'POST', httpbin.url + '/post')
         assert HTTP_OK in r
-        assert r.json['headers']['Accept'] == 'application/json'
+        assert r.json['headers']['Accept'] == JSON_ACCEPT
         # Make sure Content-Type gets set even with no data.
-        # https://github.com/jkbrzt/httpie/issues/137
+        # https://github.com/jakubroztocil/httpie/issues/137
         assert 'application/json' in r.json['headers']['Content-Type']
 
     def test_GET_explicit_JSON_explicit_headers(self, httpbin):
